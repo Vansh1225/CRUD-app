@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flask App</title>
+    <script>
+        function fetchItems() {
+            fetch('/items')
+                .then(response => response.json())
+                .then(data => {
+                    const itemsList = document.getElementById('items-list');
+                    itemsList.innerHTML = '';
+                    data.forEach(item => {
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `${item.name} - ${item.description}
+                            <!-- Update Form -->
+                            <form method="POST" action="/update/${item.id}" style="display: inline;">
+                                <input type="text" name="name" placeholder="New Name" required>
+                                <input type="text" name="description" placeholder="New Description">
+                                <button type="submit">Update</button>
+                            </form>
+                            <!-- Delete Form -->
+                            <form method="POST" action="/delete/${item.id}" style="display: inline;">
+                                <button type="submit">Delete</button>
+                            </form>`;
+                        itemsList.appendChild(listItem);
+                    });
+                });
+        }
+
+        setInterval(fetchItems, 5000);  // Fetch items every 5 seconds
+        window.onload = fetchItems;  // Fetch items when the page loads
+    </script>
+</head>
+
+<body>
+    <h1>DBMS - Deliverable 4</h1>
+    <form method="POST" action="/add">
+        <input type="text" name="name" placeholder="Item Name" required>
+        <input type="text" name="description" placeholder="Item Description">
+        <button type="submit">Add Item</button>
+    </form>
+    <ul id="items-list">
+        <!-- Items will be dynamically inserted here by JavaScript -->
+    </ul>
+</body>
+
+</html>
