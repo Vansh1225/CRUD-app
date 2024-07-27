@@ -1,4 +1,6 @@
-#!/Users/vanshthakkar/Desktop/DBMS/venv/bin/python3
+#!/bin/sh
+'''exec' "/Users/vanshthakkar/Desktop/vansh1225/Backend-ALL/Simple-TODO in Flask and NEXT/venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys
