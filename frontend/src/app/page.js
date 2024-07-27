@@ -11,84 +11,54 @@ export default function Home() {
   const [updatePrice, setUpdatePrice] = useState('');
   const [orders, setOrders] = useState([]);
   const [updateOrderMode, setUpdateOrderMode] = useState(null);
-  const [updateProductId, setUpdateProductId] = useState('');
-  const [updateQuantity, setUpdateQuantity] = useState('');
-  const [updateOrderDate, setUpdateOrderDate] = useState('');
   const [updateOrderFields, setUpdateOrderFields] = useState({});
+  const [newOrderProductId, setNewOrderProductId] = useState('');
+  const [newOrderQuantity, setNewOrderQuantity] = useState('');
+  const [newOrderDate, setNewOrderDate] = useState('');
 
-  const handleUpdateOrderFieldChange = (orderId, field, value) => {
-    setUpdateOrderFields(prevState => ({
-      ...prevState,
-      [orderId]: {
-        ...prevState[orderId],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleUpdateOrder = async (orderId) => {
-    const orderFields = updateOrderFields[orderId];
-
-    if (!orderFields) {
-      console.error(`No fields to update for order ID: ${orderId}`);
-      return;
-    }
-
-    const { product_id, quantity, order_date } = orderFields;
-
-    if (!product_id || !quantity || !order_date) {
-      console.error(`Missing fields for order ID: ${orderId}`);
-      return;
-    }
-
-    await fetch(`http://127.0.0.1:5000/update_order/${orderId}`, {
+  const handleAddOrder = async (event) => {
+    event.preventDefault();
+    await fetch('http://127.0.0.1:5000/add_order', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        product_id,
-        quantity,
-        order_date,
+        product_id: newOrderProductId,
+        quantity: newOrderQuantity,
+        order_date: newOrderDate,
       }),
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          fetchOrders();
-          setUpdateOrderMode(null);
-        } else {
-          console.error('Failed to update order:', data.message);
-        }
-      })
-      .catch(error => console.error('Error:', error));
+    });
+    fetchOrders();
+    setNewOrderProductId('');
+    setNewOrderQuantity('');
+    setNewOrderDate('');
   };
 
-
-
+  const handleUpdateOrder = async (orderId) => {
+    const { product_id, quantity, order_date } = updateOrderFields[orderId] || {};
+    await fetch(`http://127.0.0.1:5000/update_order/${orderId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ product_id, quantity, order_date }),
+    });
+    fetchOrders();
+    setUpdateOrderMode(null);
+  };
 
   const handleDeleteOrder = async (orderId) => {
     await fetch(`http://127.0.0.1:5000/delete_order/${orderId}`, {
       method: 'POST',
-    }).then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          fetchOrders();
-        } else {
-          console.log('Failed to delete order:', data.message);
-        }
-      })
-      .catch(error => console.error('Error:', error));
+    });
+    fetchOrders();
   };
-
-
 
   const fetchOrders = () => {
     fetch('http://127.0.0.1:5000/orders')
       .then(response => response.json())
-      .then(data => {
-        console.log('Fetched Orders:', data); // Log the fetched data
-        setOrders(data);
-      })
+      .then(data => setOrders(data))
       .catch(error => console.error('Error fetching orders:', error));
   };
 
@@ -186,6 +156,20 @@ export default function Home() {
       .catch(error => console.error('Error:', error));
   };
 
+  const renderAddOrderForm = () => (
+    <form onSubmit={handleAddOrder} className="flex flex-col items-center mb-8 space-y-4">
+      <select value={newOrderProductId} onChange={(e) => setNewOrderProductId(e.target.value)} required className="border p-2 rounded w-80 bg-white text-gray-800">
+        <option value="">Select Product ID</option>
+        {items.map((item) => (
+          <option key={item.product_id} value={item.product_id}>{item.product_id}</option>
+        ))}
+      </select>
+      <input type="text" value={newOrderQuantity} onChange={(e) => setNewOrderQuantity(e.target.value)} placeholder="Quantity" required className="border p-2 rounded w-80 bg-white text-gray-800" />
+      <input type="date" value={newOrderDate} onChange={(e) => setNewOrderDate(e.target.value)} required className="border p-2 rounded w-80 bg-white text-gray-800" />
+      <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Order</button>
+    </form>
+  );
+
   const renderProducts = () => (
     <div className="mt-8">
       <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">Products</h2>
@@ -227,6 +211,7 @@ export default function Home() {
       </table>
     </div>
   );
+
   const renderOrders = () => (
     <div className="mt-8">
       <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">Orders</h2>
@@ -250,41 +235,28 @@ export default function Home() {
               <td className="py-2 px-4 border">
                 {updateOrderMode === order.order_id ? (
                   <div className="flex flex-col space-y-2">
-                    <input
-                      type="text"
-                      value={updateOrderFields[order.order_id]?.product_id || ''}
-                      onChange={(e) => handleUpdateOrderFieldChange(order.order_id, 'product_id', e.target.value)}
-                      className="border p-2 rounded w-full bg-white text-gray-800"
-                      placeholder="Product ID"
-                    />
-                    <input
-                      type="text"
-                      value={updateOrderFields[order.order_id]?.quantity || ''}
-                      onChange={(e) => handleUpdateOrderFieldChange(order.order_id, 'quantity', e.target.value)}
-                      className="border p-2 rounded w-full bg-white text-gray-800"
-                      placeholder="Quantity"
-                    />
-                    <input
-                      type="text"
-                      value={updateOrderFields[order.order_id]?.order_date || ''}
-                      onChange={(e) => handleUpdateOrderFieldChange(order.order_id, 'order_date', e.target.value)}
-                      className="border p-2 rounded w-full bg-white text-gray-800"
-                      placeholder="Order Date"
-                    />
+                    <select value={updateOrderFields[order.order_id]?.product_id || ''} onChange={(e) => handleUpdateOrderFieldChange(order.order_id, 'product_id', e.target.value)} className="border p-2 rounded w-full bg-white text-gray-800">
+                      <option value="">Select Product ID</option>
+                      {items.map((item) => (
+                        <option key={item.product_id} value={item.product_id}>{item.product_id}</option>
+                      ))}
+                    </select>
+                    <input type="text" value={updateOrderFields[order.order_id]?.quantity || ''} onChange={(e) => handleUpdateOrderFieldChange(order.order_id, 'quantity', e.target.value)} className="border p-2 rounded w-full bg-white text-gray-800" />
+                    <input type="date" value={updateOrderFields[order.order_id]?.order_date || ''} onChange={(e) => handleUpdateOrderFieldChange(order.order_id, 'order_date', e.target.value)} className="border p-2 rounded w-full bg-white text-gray-800" />
                     <button onClick={() => handleUpdateOrder(order.order_id)} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Update</button>
                   </div>
                 ) : (
                   <div className="flex space-x-6">
                     <button onClick={() => {
                       setUpdateOrderMode(order.order_id);
-                      setUpdateOrderFields(prevState => ({
-                        ...prevState,
+                      setUpdateOrderFields({
+                        ...updateOrderFields,
                         [order.order_id]: {
                           product_id: order.product_id,
                           quantity: order.quantity,
                           order_date: order.order_date
                         }
-                      }));
+                      });
                     }} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Want to update?</button>
                     <button onClick={() => handleDeleteOrder(order.order_id)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
                   </div>
@@ -296,8 +268,6 @@ export default function Home() {
       </table>
     </div>
   );
-
-
 
   const renderQueryResults = (title, results) => (
     <div className="mb-8">
@@ -325,16 +295,17 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
-      <Head>
-        <title>My Custom App Title</title>
-      </Head>
-      <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">DBMS - Deliverable 4</h1>
-      <form onSubmit={handleAddItem} className="flex flex-col items-center mb-8 space-y-4">
-        <input type="text" name="name" placeholder="Item Name" required className="border p-2 rounded w-80 bg-white text-gray-800" />
-        <input type="text" name="category" placeholder="Item Category" className="border p-2 rounded w-80 bg-white text-gray-800" />
-        <input type="text" name="price" placeholder="Item Price" className="border p-2 rounded w-80 bg-white text-gray-800" />
-        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Item</button>
-      </form>
+
+      <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Inventory Management App</h1>
+      <div className="flex justify-between">
+        <form onSubmit={handleAddItem} className="flex flex-col items-center mb-8 space-y-4">
+          <input type="text" name="name" placeholder="Item Name" required className="border p-2 rounded w-80 bg-white text-gray-800" />
+          <input type="text" name="category" placeholder="Item Category" className="border p-2 rounded w-80 bg-white text-gray-800" />
+          <input type="text" name="price" placeholder="Item Price" className="border p-2 rounded w-80 bg-white text-gray-800" />
+          <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Item</button>
+        </form>
+        {renderAddOrderForm()}
+      </div>
       {renderProducts()}
       {renderOrders()}
       <div className="mt-8">
